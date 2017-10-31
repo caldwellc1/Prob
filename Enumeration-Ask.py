@@ -85,7 +85,7 @@ class Node():
 
 def enumeration_ask(X, e, bn):
     Q = [0, 0]
-    for xi in bn.variable_values(X):
+    for xi in bn.variable_values():
         e.update({X: xi})
         Q[xi] = enumerate_all(bn.variables, e, bn)
     return normalize(Q)
@@ -95,32 +95,62 @@ def enumerate_all(variables, e, bn):
     if not variables:
         return 1.0
     Y, rest = variables[0], variables[1:]
-    Ynode = bn.variable_node(Y)
     if Y in e:
-        return Ynode.p(e[Y], e) * enumerate_all(rest, e, bn)
+        return get_prob(Y, bn, 1, e) * enumerate_all(rest, e, bn)
     else:
-        e.update({Y: y})
-        return sum(Ynode.p(y, e) * enumerate_all(rest, e, bn)
-                   for y in bn.variable_values(Y))
+        return sum(get_prob(Y, bn, 0, e) * enumerate_all(rest, up(e, {Y: 0}), bn) for y in bn.variable_values)
 
+
+def up(e, date):
+    e.update(date)
+    return e
+
+def get_prob(node, bn, tf, e):
+    if len(bn.board[node]) == 0:
+        if tf:
+            return bn.prob_table.get(node)[0]
+        else:
+            return bn.prob_table.get(node)[1]
+    if len(bn.board[node]) == 1:
+        parents = bn.board.get(node)
+        if tf:
+            if e[parents[0]]:
+                return bn.prob_table.get(node)[0]
+            else:
+                return bn.prob_table.get(node)[1]
+        else:
+            if e[parents[0]]:
+                return bn.prob_table.get(node)[2]
+            else:
+                return bn.prob_table.get(node)[3]
+    if len(bn.board[node]) == 2:
+        parents = bn.board.get(node)
+        if tf:
+            if e[parents[0]]:
+                if e[parents[1]]:
+                    return bn.prob_table.get(node)[0]
+                else:
+                    return bn.prob_table.get(node)[1]
+            else:
+                if e[parents[1]]:
+                    return bn.prob_table.get(node)[2]
+                else:
+                    return bn.prob_table.get(node)[3]
+        else:
+            if e[parents[0]]:
+                if e[parents[1]]:
+                    return bn.prob_table.get(node)[4]
+                else:
+                    return bn.prob_table.get(node)[5]
+            else:
+                if e[parents[1]]:
+                    return bn.prob_table.get(node)[6]
+                else:
+                    return bn.prob_table.get(node)[7]
 
 def normalize(dist):
-    """Multiply each number by a constant such that the sum is 1.0"""
-    if isinstance(dist, dict):
-        total = sum(dist.values())
-        for key in dist:
-            dist[key] = dist[key] / total
-            assert 0 <= dist[key] <= 1, "Probabilities must be between 0 and 1."
-        return dist
-    total = sum(dist)
-    return [(n / total) for n in dist]
+    return dist[0] / (dist[0] + dist[1])
 
-
-def extend(s, var, val):
-    """Copy the substitution s and extend it by setting var to val; return copy."""
-    s2 = s.copy()
-    s2[var] = val
-    return s2
 
 def topological(g):
     degrees = []
@@ -136,11 +166,10 @@ def topological(g):
     return x
 
 
-
 def main():
     bn = Node({'H': [], 'E': ['H'], 'W': [], 'V': ['E', 'W']})
     bn.prob_table = bn.build_network('data1.csv')
-    enumerate_all('E', {'H': 0}, bn)
+    print(enumerate_all('E', {'H': 1}, bn))
 
 if __name__ == '__main__':
     main()

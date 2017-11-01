@@ -50,6 +50,7 @@ def enumeration_ask(X, e, bn):
 def enumerate_all(variables, e, bn):
     if not variables:
         return 1.0
+    variables = topological(variables)
     Y, rest = variables[0], variables[1:]
     Ynode = bn.variable_node(Y)
     if Y in e:

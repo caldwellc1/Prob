@@ -1,11 +1,11 @@
 from collections import deque
 import pandas as pd
-
+# False = 0
 
 class Node():
     def __init__(self, board):
         self.prob_table = {}
-        self.vars = board.keys()  # {'H', 'W', 'E', 'V'}
+        self.vars = list(board.keys())  # {'H', 'W', 'E', 'V'}
         self.board = board
         self.variable_values = [0, 1]
 
@@ -85,18 +85,18 @@ class Node():
 
 def enumeration_ask(X, e, bn):
     Q = [0, 0]
-    for xi in bn.variable_values():
+    for xi in bn.variable_values:
         e.update({X: xi})
-        Q[xi] = enumerate_all(bn.variables, e, bn)
+        Q[xi] = enumerate_all(bn.vars, e, bn)
     return normalize(Q)
 
 
 def enumerate_all(variables, e, bn):
     if not variables:
         return 1.0
-    variables = topological(variables)
+    # variables = topological(variables)
     Y, rest = variables[0], variables[1:]
-    if Y in e:
+    if e.get(Y):
         return get_prob(Y, bn, 1, e) * enumerate_all(rest, e, bn)
     else:
         return sum(get_prob(Y, bn, 0, e) * enumerate_all(rest, up(e, {Y: 0}), bn) for y in bn.variable_values)
@@ -170,7 +170,7 @@ def topological(g):
 def main():
     bn = Node({'H': [], 'E': ['H'], 'W': [], 'V': ['E', 'W']})
     bn.prob_table = bn.build_network('data1.csv')
-    print(enumerate_all('E', {'H': 1}, bn))
+    print(enumeration_ask('V', {'H': 1}, bn))
 
 if __name__ == '__main__':
     main()

@@ -33,7 +33,7 @@ class Node():
                 for i in range(len(df)):
                     if df[word][i]:
                         count += 1
-                    else:
+                    if df[word][i] == False:
                         count_not += 1
                 count2 = count / (count + count_not)
                 count_not2 = count_not / (count + count_not)
@@ -46,7 +46,7 @@ class Node():
                         count_T_F += 1
                     if df[word][i] == False and df[parents[0]][i]:
                         count_F_T += 1
-                    else:
+                    if df[word][i] == False and df[parents[0]][i] == False:
                         count_F_F += 1
                 count_T_T2 = count_T_T / (count_T_T + count_F_T)
                 count_T_F2 = count_T_F / (count_T_F + count_F_F)
@@ -69,7 +69,7 @@ class Node():
                         count_F_T_F += 1
                     if df[word][i] == False and df[parents[0]][i] == False and df[parents[1]][i]:
                         count_F_F_T += 1
-                    else:
+                    if df[word][i] == False and df[parents[0]][i] == False and df[parents[1]][i] == False:
                         count_F_F_F += 1
                 count_T_T_T2 = count_T_T_T / (count_T_T_T + count_F_T_T)
                 count_T_T_F2 = count_T_T_F / (count_T_T_F + count_F_T_F)
@@ -83,28 +83,29 @@ class Node():
         return prob_table
 
 
-def enumeration_ask(X, e, bn):
+def enumeration_ask(X, e, bn, poss):
     Q = [0, 0]
     for xi in bn.variable_values:
         e.update({X: xi})
         Q[xi] = enumerate_all(bn.vars, e, bn)
-    return normalize(Q)
+    return normalize(Q, poss)
 
 
 def enumerate_all(variables, e, bn):
     if not variables:
         return 1.0
-    # variables = topological(variables)
     Y, rest = variables[0], variables[1:]
-    if e.get(Y):
-        return get_prob(Y, bn, 1, e) * enumerate_all(rest, e, bn)
+    if Y in e:
+        return get_prob(Y, bn, e.get(Y), e) * enumerate_all(rest, e, bn)
     else:
-        return sum(get_prob(Y, bn, 0, e) * enumerate_all(rest, up(e, {Y: 0}), bn) for y in bn.variable_values)
+        return sum(get_prob(Y, bn, y, e) * enumerate_all(rest, up(e, {Y: y}), bn) for y in bn.variable_values)
 
 
 def up(e, date):
-    e.update(date)
-    return e
+    copy = e.copy()
+    copy.update(date)
+    return copy
+
 
 def get_prob(node, bn, tf, e):
     if len(bn.board[node]) == 0:
@@ -149,7 +150,10 @@ def get_prob(node, bn, tf, e):
                 else:
                     return bn.prob_table.get(node)[7]
 
-def normalize(dist):
+
+def normalize(dist, poss):
+    if poss:
+        return dist[1] / (dist[0] + dist[1])
     return dist[0] / (dist[0] + dist[1])
 
 
@@ -168,9 +172,11 @@ def topological(g):
 
 
 def main():
-    bn = Node({'H': [], 'E': ['H'], 'W': [], 'V': ['E', 'W']})
+    bn = Node({'H': [], 'W': [], 'E': ['H'], 'V': ['E', 'W']})
+    #bn = Node({'H': [], 'W': [], 'E': ['H'], 'V': ['E', 'W']})
     bn.prob_table = bn.build_network('data1.csv')
-    print(enumeration_ask('V', {'H': 1}, bn))
+    print(enumeration_ask('V', {'H': 1}, bn, 1))
+    print(enumerate_all(['H', 'W', 'E', 'V'], {'H': 1, 'W': 1, 'E': 1, 'V': 0}, bn))
 
 if __name__ == '__main__':
     main()

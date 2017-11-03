@@ -174,24 +174,25 @@ def topological(g):
     return x
 
 
-def log_likelihood(bn):
+def log_likelihood(bn, name):
+    df = pd.read_csv(name)
     like = 0
-    perm = ["".join(seq) for seq in itertools.product("01", repeat=5)]
-    for i in range(len(perm)):
-        like += enumerate_all(['A', 'B', 'C', 'D', 'E'], {'A': perm[i][0], 'B': perm[i][1], 'C': perm[i][2], 'D': perm[i][3], 'E': perm[i][4]}, bn)
-    return np.log(like)
+    # perm = ["".join(seq) for seq in itertools.product("01", repeat=5)]
+    for i in range(len(df)):
+        like += np.log(enumerate_all(['A', 'B', 'C', 'D', 'E'], {'A': df['A'][i], 'B': df['B'][i], 'C': df['C'][i], 'D': df['D'][i], 'E': df['E'][i]}, bn))
+    return like
 
 
 def main():
     # bn = Node({'H': [], 'W': [], 'E': ['H'], 'V': ['E', 'W']})
     # bn = Node({'H': [], 'W': [], 'E': ['H'], 'V': ['E', 'W']})
-    bn = Node({"A": [], "B": ["D"], "C": ["A"], "D": ["B"], "E": ["C", "D"]})
-    # bn = Node({"A": [], "B": [], "C": ["A", "B"], "D": ["C"], "E": ["C"]})
-    # bn = Node({"A": [], "E": [], "B": ["A"], "C": ["A"], "D": ["B", "C"]})
+    #bn = Node({"A": [], "B": [], "C": ["A"], "D": ["B"], "E": ["C", "D"]})
+    #bn = Node({"A": [], "B": [], "C": ["A", "B"], "D": ["C"], "E": ["C"]})
+    bn = Node({"A": [], "B": ["A"], "C": ["A"], "D": ["B", "C"], "E": []})
     bn.prob_table = bn.build_network('data3.csv')
     # print(enumeration_ask('V', {'H': 1}, bn, 1))
     # print(enumerate_all(['H', 'W', 'E', 'V'], {'H': 1, 'W': 1, 'E': 1, 'V': 0}, bn))
-    print(log_likelihood(bn))
+    print(log_likelihood(bn, 'data5.csv'))
 
 if __name__ == '__main__':
     main()

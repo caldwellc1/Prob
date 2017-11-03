@@ -1,11 +1,14 @@
 from collections import deque
 import pandas as pd
+import itertools
+import numpy as np
 # False = 0
 
-class Node():
+
+class Node:
     def __init__(self, board):
         self.prob_table = {}
-        self.vars = list(board.keys())  # {'H', 'W', 'E', 'V'}
+        self.vars = list(board.keys())
         self.board = board
         self.variable_values = [0, 1]
 
@@ -171,12 +174,24 @@ def topological(g):
     return x
 
 
+def log_likelihood(bn):
+    like = 0
+    perm = ["".join(seq) for seq in itertools.product("01", repeat=5)]
+    for i in range(len(perm)):
+        like += enumerate_all(['A', 'B', 'C', 'D', 'E'], {'A': perm[i][0], 'B': perm[i][1], 'C': perm[i][2], 'D': perm[i][3], 'E': perm[i][4]}, bn)
+    return np.log(like)
+
+
 def main():
-    bn = Node({'H': [], 'W': [], 'E': ['H'], 'V': ['E', 'W']})
-    #bn = Node({'H': [], 'W': [], 'E': ['H'], 'V': ['E', 'W']})
-    bn.prob_table = bn.build_network('data1.csv')
-    print(enumeration_ask('V', {'H': 1}, bn, 1))
-    print(enumerate_all(['H', 'W', 'E', 'V'], {'H': 1, 'W': 1, 'E': 1, 'V': 0}, bn))
+    # bn = Node({'H': [], 'W': [], 'E': ['H'], 'V': ['E', 'W']})
+    # bn = Node({'H': [], 'W': [], 'E': ['H'], 'V': ['E', 'W']})
+    bn = Node({"A": [], "B": ["D"], "C": ["A"], "D": ["B"], "E": ["C", "D"]})
+    # bn = Node({"A": [], "B": [], "C": ["A", "B"], "D": ["C"], "E": ["C"]})
+    # bn = Node({"A": [], "E": [], "B": ["A"], "C": ["A"], "D": ["B", "C"]})
+    bn.prob_table = bn.build_network('data3.csv')
+    # print(enumeration_ask('V', {'H': 1}, bn, 1))
+    # print(enumerate_all(['H', 'W', 'E', 'V'], {'H': 1, 'W': 1, 'E': 1, 'V': 0}, bn))
+    print(log_likelihood(bn))
 
 if __name__ == '__main__':
     main()

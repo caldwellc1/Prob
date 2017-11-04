@@ -1,6 +1,4 @@
-from collections import deque
 import pandas as pd
-import itertools
 import numpy as np
 # False = 0
 
@@ -12,6 +10,7 @@ class Node:
         self.board = board
         self.variable_values = [0, 1]
 
+    # builds the probability table the long way by having each node run through the table to get it's probability
     def build_network(self, name):
         prob_table = {}
 
@@ -104,12 +103,14 @@ def enumerate_all(variables, e, bn):
         return sum(get_prob(Y, bn, y, e) * enumerate_all(rest, up(e, {Y: y}), bn) for y in bn.variable_values)
 
 
+# function to create a copy of the dictionary to pass
 def up(e, date):
     copy = e.copy()
     copy.update(date)
     return copy
 
 
+# grabs the requested probability by how the nodes are ordered in the tuple
 def get_prob(node, bn, tf, e):
     if len(bn.board[node]) == 0:
         if tf:
@@ -154,45 +155,39 @@ def get_prob(node, bn, tf, e):
                     return bn.prob_table.get(node)[7]
 
 
+# returns for the given value as true or not
 def normalize(dist, poss):
     if poss:
         return dist[1] / (dist[0] + dist[1])
     return dist[0] / (dist[0] + dist[1])
 
 
-def topological(g):
-    degrees = []
-    x = []
-    queue = deque()
-    while len(queue) > 0:
-        node = queue.pop()
-        x += [node]
-        for child in node:
-            degrees[child] -= 1
-            if degrees[child] == 0:
-                queue.append([child])
-    return x
-
-
 def log_likelihood(bn, name):
     df = pd.read_csv(name)
     like = 0
-    # perm = ["".join(seq) for seq in itertools.product("01", repeat=5)]
     for i in range(len(df)):
         like += np.log(enumerate_all(['A', 'B', 'C', 'D', 'E'], {'A': df['A'][i], 'B': df['B'][i], 'C': df['C'][i], 'D': df['D'][i], 'E': df['E'][i]}, bn))
     return like
 
 
+def parameters(bn):
+    counts = 0
+    for words in bn.prob_table:
+        counts += len(bn.prob_table[words])
+    return counts
+
+
 def main():
     # bn = Node({'H': [], 'W': [], 'E': ['H'], 'V': ['E', 'W']})
-    # bn = Node({'H': [], 'W': [], 'E': ['H'], 'V': ['E', 'W']})
-    #bn = Node({"A": [], "B": [], "C": ["A"], "D": ["B"], "E": ["C", "D"]})
-    #bn = Node({"A": [], "B": [], "C": ["A", "B"], "D": ["C"], "E": ["C"]})
+    # bn = Node({'B': [], 'F': [], 'G': ['B', 'F'], 'S': ['B', 'F']})
+    # bn = Node({"A": [], "B": [], "C": ["A"], "D": ["B"], "E": ["C", "D"]})
+    # bn = Node({"A": [], "B": [], "C": ["A", "B"], "D": ["C"], "E": ["C"]})
     bn = Node({"A": [], "B": ["A"], "C": ["A"], "D": ["B", "C"], "E": []})
     bn.prob_table = bn.build_network('data3.csv')
+    print(parameters(bn))
     # print(enumeration_ask('V', {'H': 1}, bn, 1))
     # print(enumerate_all(['H', 'W', 'E', 'V'], {'H': 1, 'W': 1, 'E': 1, 'V': 0}, bn))
-    print(log_likelihood(bn, 'data5.csv'))
+    # print(log_likelihood(bn, 'data3.csv'))
 
 if __name__ == '__main__':
     main()
